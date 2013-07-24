@@ -1,5 +1,15 @@
 package com.dianping.polestar.service;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.StreamingOutput;
+
+import com.dianping.polestar.EnvironmentConstants;
+import com.dianping.polestar.PolestarException;
 import com.dianping.polestar.engine.CommandQueryEngine;
 import com.dianping.polestar.engine.IQueryEngine;
 import com.dianping.polestar.entity.Query;
@@ -8,6 +18,8 @@ import com.dianping.polestar.entity.QueryStatus;
 import com.dianping.polestar.jobs.Job;
 import com.dianping.polestar.jobs.JobContext;
 import com.dianping.polestar.jobs.JobManager;
+import com.dianping.polestar.store.HDFSManager;
+import com.google.common.base.Preconditions;
 
 public class DefaultQueryService implements IQueryService {
 
@@ -23,11 +35,13 @@ public class DefaultQueryService implements IQueryService {
 	public QueryResult postQuery(Query query) {
 		QueryResult queryRes = new QueryResult();
 		long startTime = System.currentTimeMillis();
-		if ("hive".equalsIgnoreCase(query.getMode()) || "shark".equalsIgnoreCase(query.getMode())) {
+		if ("hive".equalsIgnoreCase(query.getMode())
+				|| "shark".equalsIgnoreCase(query.getMode())) {
 			queryRes = cmdEngine.postQuery(query);
 			queryRes.setExecTime((System.currentTimeMillis() - startTime) / 1000);
 		} else {
-			throw new IllegalArgumentException("unsupported query mode:" + query.getMode());
+			throw new IllegalArgumentException("unsupported query mode:"
+					+ query.getMode());
 		}
 		return queryRes;
 	}
@@ -48,12 +62,40 @@ public class DefaultQueryService implements IQueryService {
 
 	@Override
 	public Boolean cancel(String id) {
+		Boolean canceled = false;
 		Job job = JobManager.getJobById(id);
-		job.cancel();
-		Boolean canceled = job.isCanceled();
-		if (canceled) {
-			JobManager.removeJob(id);
+		if (job != null) {
+			job.cancel();
+			canceled = job.isCanceled();
+			if (canceled) {
+				JobManager.removeJob(id);
+			}
 		}
 		return canceled;
+	}
+
+	@Override
+	public StreamingOutput getDataFile(String filename) {
+		final InputStream is = HDFSManager
+				.openFSDataInputStream(EnvironmentConstants.HDFS_DATA_ROOT_PATH
+						+ File.separator + filename);
+		StreamingOutput stream = null;
+		stream = new StreamingOutput() {
+
+			@Override
+			public void write(OutputStream output) throws IOException,
+					WebApplicationException {
+				try {
+					int read = 0;
+					byte[] bytes = new byte[1024];
+					while ((read = is.read(bytes)) != -1) {
+						output.write(bytes, 0, read);
+					}
+				} catch (IOException e) {
+					throw new PolestarException(e);
+				}
+			}
+		};
+		return stream;
 	}
 }

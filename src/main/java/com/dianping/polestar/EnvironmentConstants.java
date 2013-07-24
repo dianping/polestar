@@ -13,29 +13,34 @@ public final class EnvironmentConstants {
 	public static int MAX_RESULT_DATA_NUMBER = 1000000;
 	public static String HDFS_DATA_ROOT_PATH = "hdfs://10.1.77.86/data/polestar";
 
+	public static String HADOOP_PRINCIPAL = "hadoop@DIANPING.COM";
+	public static String HADOOP_KEYTAB_FILE = "/home/hadoop/.keytab";
+
 	static {
 		InputStream is = ClassUtils.getResourceAsStream("polestar.properties");
 		Properties pros = new Properties();
 		try {
 			pros.load(is);
-			if (pros.containsKey("DATA_FILE_EXTENSION")) {
-				DATA_FILE_EXTENSION = pros.getProperty("DATA_FILE_EXTENSION");
-			}
-			if (pros.containsKey("WORKING_DIRECTORY_ROOT")) {
-				WORKING_DIRECTORY_ROOT = pros
-						.getProperty("WORKING_DIRECTORY_ROOT");
-			}
-			if (pros.containsKey("DEFAULT_RESULT_DATA_NUMBER")) {
-				DEFAULT_RESULT_DATA_NUMBER = Integer.valueOf(pros
-						.getProperty("DEFAULT_RESULT_DATA_NUMBER"));
-			}
-			if (pros.containsKey("MAX_RESULT_DATA_NUMBER")) {
-				MAX_RESULT_DATA_NUMBER = Integer.valueOf(pros
-						.getProperty("MAX_RESULT_DATA_NUMBER"));
-			}
-			if (pros.containsKey("HDFS_DATA_ROOT_PATH")) {
-				HDFS_DATA_ROOT_PATH = pros.getProperty("HDFS_DATA_ROOT_PATH");
-			}
+
+			DATA_FILE_EXTENSION = pros.getProperty("DATA_FILE_EXTENSION",
+					DATA_FILE_EXTENSION);
+
+			WORKING_DIRECTORY_ROOT = pros.getProperty("WORKING_DIRECTORY_ROOT",
+					WORKING_DIRECTORY_ROOT);
+
+			DEFAULT_RESULT_DATA_NUMBER = Integer.valueOf(pros.getProperty(
+					"DEFAULT_RESULT_DATA_NUMBER",
+					String.valueOf(DEFAULT_RESULT_DATA_NUMBER)));
+
+			MAX_RESULT_DATA_NUMBER = Integer.valueOf(pros.getProperty(
+					"MAX_RESULT_DATA_NUMBER",
+					String.valueOf(MAX_RESULT_DATA_NUMBER)));
+
+			HDFS_DATA_ROOT_PATH = pros.getProperty("HDFS_DATA_ROOT_PATH",
+					HDFS_DATA_ROOT_PATH);
+
+			HADOOP_PRINCIPAL = pros.getProperty(
+					pros.getProperty("HADOOP_PRINCIPAL"), HADOOP_PRINCIPAL);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

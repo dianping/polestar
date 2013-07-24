@@ -8,6 +8,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import com.dianping.polestar.entity.Query;
 import com.dianping.polestar.entity.QueryResult;
@@ -27,6 +28,13 @@ public class PolestarController {
 	}
 
 	@GET
+	@Path("/download/{filename}")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response get(@PathParam("filename") String filename) {
+		return Response.ok(queryService.getDataFile(filename)).build();
+	}
+
+	@GET
 	@Path("/cancel/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Boolean cancelQuery(@PathParam("id") String id) {
@@ -39,6 +47,6 @@ public class PolestarController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response postQuery(Query query) {
 		QueryResult result = queryService.postQuery(query);
-		return Response.status(201).entity(result).build();
+		return Response.status(Status.CREATED).entity(result).build();
 	}
 }

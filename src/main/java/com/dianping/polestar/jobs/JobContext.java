@@ -10,7 +10,6 @@ public final class JobContext {
 	private String username;
 	private String passwd;
 	private boolean storeResult;
-	private int resLimitNum;
 	private String id;
 	private int exitCode;
 	private StringBuffer stderr = new StringBuffer(500);
@@ -62,14 +61,6 @@ public final class JobContext {
 
 	public void setStoreResult(boolean storeResult) {
 		this.storeResult = storeResult;
-	}
-
-	public int getResLimitNum() {
-		return resLimitNum;
-	}
-
-	public void setResLimitNum(int resLimitNum) {
-		this.resLimitNum = resLimitNum;
 	}
 
 	public String getId() {

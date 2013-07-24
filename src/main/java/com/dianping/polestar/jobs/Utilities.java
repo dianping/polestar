@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.lang.StringUtils;
@@ -22,6 +23,8 @@ public class Utilities {
 
 	public static final char LINE_SEPARATOR = '\n';
 	public static final char FIELD_SEPARATOR = '\t';
+	public static final int COMPRESSION_BUFFER_SIZE = 4096;
+	public static final int COMPRESSION_LEVEL = Deflater.BEST_COMPRESSION;
 
 	public static void hadoopKerberosLogin(String username, String passwd,
 			String ticketCachePath) throws PolestarException {
@@ -58,7 +61,12 @@ public class Utilities {
 			}
 		}
 		if (gzip) {
-			return new GZIPOutputStream(new FileOutputStream(file, append));
+			return new GZIPOutputStream(new FileOutputStream(file, append),
+					COMPRESSION_BUFFER_SIZE) {
+				{
+					def.setLevel(COMPRESSION_LEVEL);
+				};
+			};
 		}
 		return new FileOutputStream(file, append);
 	}

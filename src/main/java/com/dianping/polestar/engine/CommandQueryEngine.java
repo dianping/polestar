@@ -9,11 +9,10 @@ import org.apache.commons.logging.LogFactory;
 import com.dianping.polestar.EnvironmentConstants;
 import com.dianping.polestar.entity.Query;
 import com.dianping.polestar.entity.QueryResult;
-import com.dianping.polestar.jobs.HiveProcessJob;
 import com.dianping.polestar.jobs.Job;
+import com.dianping.polestar.jobs.JobAdapter;
 import com.dianping.polestar.jobs.JobContext;
 import com.dianping.polestar.jobs.JobManager;
-import com.dianping.polestar.jobs.ProcessJob;
 import com.dianping.polestar.jobs.Utilities;
 import com.dianping.polestar.store.HDFSManager;
 
@@ -34,21 +33,15 @@ public class CommandQueryEngine implements IQueryEngine {
 		jobCtx.setUsername(query.getUsername());
 		jobCtx.setPasswd(query.getPassword());
 		jobCtx.setStoreResult(query.isStoreResult());
-		jobCtx.setResLimitNum(query.getResLimitNum());
 		jobCtx.setCommands(new String[] {
-				query.getMode(),
+				getCommandByMode(query.getMode()),
 				"-e",
 				String.format(HIVE_COMMAND_FORMAT, query.getDatabase(),
 						query.getSql()) });
 		jobCtx.setWorkDir(EnvironmentConstants.WORKING_DIRECTORY_ROOT
 				+ File.separator + query.getId());
 
-		Job job = null;
-		if ("hive".equalsIgnoreCase(query.getMode())) {
-			job = new HiveProcessJob(jobCtx);
-		} else if ("shark".equalsIgnoreCase(query.getMode())) {
-			job = new ProcessJob(jobCtx);
-		}
+		Job job = JobAdapter.createJob(query.getMode(), jobCtx);
 		JobManager.putJob(query.getId(), job, jobCtx);
 
 		QueryResult queryRes = new QueryResult();
@@ -80,5 +73,14 @@ public class CommandQueryEngine implements IQueryEngine {
 			JobManager.removeJob(query.getId());
 		}
 		return queryRes;
+	}
+
+	public static String getCommandByMode(String mode) {
+		if ("hive".equalsIgnoreCase(mode)) {
+			return "hive";
+		} else if ("shark".equalsIgnoreCase(mode)) {
+			return "shark-witherror";
+		}
+		return mode;
 	}
 }
