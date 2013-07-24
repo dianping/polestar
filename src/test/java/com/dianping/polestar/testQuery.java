@@ -17,15 +17,14 @@ public class testQuery {
 
 			webResource = client
 					.resource("http://10.1.77.84:8080/polestar/query/post");
-			String sql = "select guid, session_id from hippolog where dt='2012-09-01'";
-			sql = "show tables";
+			String sql = "select guid, referer from hippolog where dt='2012-09-01'";
+			 //sql = "show tables";
 
 			String input = "{\"sql\":\"" + sql + "\",\"mode\":\"hive\","
 					+ "\"database\":\"default\","
 					+ "\"username\":\"yukang.chen\","
 					+ "\"password\":\"yukang.chen\","
-					+ "\"storeResult\":\"true\","
-					+ "\"resLimitNum\":\"100000\"," + "\"id\":\"10000\"}";
+					+ "\"storeResult\":\"true\"," + "\"id\":\"10000\"}";
 
 			ClientResponse response = webResource.type("application/json")
 					.post(ClientResponse.class, input);
