@@ -53,11 +53,8 @@ public class ProcessJob extends AbstractJob {
 		setEnvironmentVariables();
 
 		final Boolean storeResult = jobContext.isStoreResult();
-		final int resultLimit = storeResult ? Math.max(
-				jobContext.getResLimitNum(),
-				EnvironmentConstants.MAX_RESULT_DATA_NUMBER) : Math.min(
-				jobContext.getResLimitNum(),
-				EnvironmentConstants.DEFAULT_RESULT_DATA_NUMBER);
+		final int resultLimit = storeResult ? EnvironmentConstants.MAX_RESULT_DATA_NUMBER
+				: EnvironmentConstants.DEFAULT_RESULT_DATA_NUMBER;
 
 		ProcessBuilder builder = new ProcessBuilder(jobContext.getCommands());
 		builder.directory(workDir);
@@ -67,7 +64,7 @@ public class ProcessJob extends AbstractJob {
 		final InputStream inputStream = process.getInputStream();
 		final InputStream errorStream = process.getErrorStream();
 		String threadName = "job-" + jobContext.getId();
-		new Thread(new Runnable() {
+		Thread outThread = new Thread(threadName + "-stdout") {
 
 			@Override
 			public void run() {
@@ -80,22 +77,22 @@ public class ProcessJob extends AbstractJob {
 						os = Utilities.openOutputStream(dataFile, false, true);
 						bos = new BufferedOutputStream(os);
 					}
-					String line;
 					int currLineNum = 0;
-					while ((line = reader.readLine()) != null
-							&& currLineNum++ < resultLimit) {
-						System.out.println("stdout:" + line);
+					String line = reader.readLine();
+					while (line != null && currLineNum++ <= resultLimit
+							&& !isInterrupted()) {
 						if (storeResult) {
 							bos.write(line.getBytes());
-							bos.write(10);
+							bos.write(Utilities.LINE_SEPARATOR);
 						} else {
 							jobContext.getStdout().append(line)
 									.append(Utilities.LINE_SEPARATOR);
 						}
+						line = reader.readLine();
 					}
 
-					if (currLineNum >= resultLimit) {
-						LOG.info("data result limit exceed max value:"
+					if (currLineNum > resultLimit) {
+						LOG.info("data result lines limit exceed max value:"
 								+ resultLimit
 								+ ",start to destroy query process, id:"
 								+ jobContext.getId());
@@ -116,25 +113,33 @@ public class ProcessJob extends AbstractJob {
 					}
 				}
 			}
-		}, threadName).start();
+		};
 
-		new Thread(new Runnable() {
+		Thread errThread = new Thread(threadName + "-stderr") {
 			@Override
 			public void run() {
 				try {
 					BufferedReader reader = new BufferedReader(
 							new InputStreamReader(errorStream));
-					String line;
-					while ((line = reader.readLine()) != null) {
-						jobContext.getStderr().append(line).append('\n');
+					String line = reader.readLine();
+					while (line != null && !isInterrupted()) {
+						jobContext.getStderr().append(line)
+								.append(Utilities.LINE_SEPARATOR);
+						line = reader.readLine();
 					}
-				} catch (Exception e) {
-					LOG.error(e);
+				} catch (IOException e) {
+					LOG.warn("Error reading the error stream", e);
 				} finally {
 					IOUtils.closeQuietly(errorStream);
 				}
 			}
-		}, threadName).start();
+		};
+
+		try {
+			outThread.start();
+			errThread.start();
+		} catch (IllegalStateException ise) {
+		}
 
 		try {
 			LOG.info("start to execute query commands:"
@@ -143,6 +148,12 @@ public class ProcessJob extends AbstractJob {
 					+ jobContext.getId());
 
 			exitCode = process.waitFor();
+			try {
+				outThread.join();
+				errThread.join();
+			} catch (InterruptedException ie) {
+				LOG.warn("Interrupted while reading the stdout/stderr stream", ie);
+			}
 			// force return exitcode 0 when query was killed because of
 			// exceedance of max line number
 			if (killedWhenExceedMaxLines) {
@@ -161,7 +172,7 @@ public class ProcessJob extends AbstractJob {
 		process.destroy();
 		process = null;
 		canceled = true;
-		LOG.info("query was canceled, id" + jobContext.getId());
+		LOG.info("query was canceled, id:" + jobContext.getId());
 	}
 
 	@Override
