@@ -19,7 +19,6 @@ import com.dianping.polestar.jobs.Job;
 import com.dianping.polestar.jobs.JobContext;
 import com.dianping.polestar.jobs.JobManager;
 import com.dianping.polestar.store.HDFSManager;
-import com.google.common.base.Preconditions;
 
 public class DefaultQueryService implements IQueryService {
 

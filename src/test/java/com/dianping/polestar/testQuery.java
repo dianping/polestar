@@ -18,13 +18,13 @@ public class testQuery {
 			webResource = client
 					.resource("http://10.1.77.84:8080/polestar/query/post");
 			String sql = "select guid, referer from hippolog where dt='2012-09-01'";
-			 //sql = "show tables";
+			 sql = "show tables";
 
 			String input = "{\"sql\":\"" + sql + "\",\"mode\":\"hive\","
 					+ "\"database\":\"default\","
 					+ "\"username\":\"yukang.chen\","
 					+ "\"password\":\"yukang.chen\","
-					+ "\"storeResult\":\"true\"," + "\"id\":\"10000\"}";
+					+ "\"storeResult\":\"false\"," + "\"id\":\"10000\"}";
 
 			ClientResponse response = webResource.type("application/json")
 					.post(ClientResponse.class, input);
