@@ -21,7 +21,7 @@ public class HDFSManager {
 
 	private static FileSystem fs = null;
 
-	private static FileSystem getFs() {
+	private static FileSystem getFS() {
 		if (fs == null) {
 			try {
 				fs = FileSystem.get(getDefaultConfiguration());
@@ -35,7 +35,7 @@ public class HDFSManager {
 
 	public static void putFileToHDFS(String src, String dest) {
 		try {
-			getFs().copyFromLocalFile(false, true, new Path(src),
+			getFS().copyFromLocalFile(false, true, new Path(src),
 					new Path(dest));
 			LOG.info("put file " + src + " to " + dest + " succeed !");
 		} catch (IOException e) {
@@ -92,13 +92,13 @@ public class HDFSManager {
 	public static InputStream openFSDataInputStream(String absolutePath) {
 		Path p = new Path(absolutePath);
 		try {
-			if (!getFs().exists(p)) {
+			if (!getFS().exists(p)) {
 				throw new PolestarException(p.toString() + " doesn't exist !");
 			}
-			if (!getFs().isFile(p)) {
+			if (!getFS().isFile(p)) {
 				throw new PolestarException(p.toString() + " is not a file !");
 			}
-			return getFs().open(p);
+			return getFS().open(p);
 		} catch (IOException e) {
 			throw new PolestarException(e);
 		}
