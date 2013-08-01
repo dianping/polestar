@@ -18,13 +18,18 @@ import com.dianping.polestar.entity.QueryStatus;
 import com.dianping.polestar.jobs.Job;
 import com.dianping.polestar.jobs.JobContext;
 import com.dianping.polestar.jobs.JobManager;
+import com.dianping.polestar.jobs.Utilities;
 import com.dianping.polestar.store.HDFSManager;
+import com.dianping.polestar.store.mysql.dao.QueryDAO;
+import com.dianping.polestar.store.mysql.dao.impl.QueryDAOFactory;
+import com.dianping.polestar.store.mysql.domain.QueryInfo;
 
 public class DefaultQueryService implements IQueryService {
 
 	private static final DefaultQueryService INSTANCE = new DefaultQueryService();
 
 	private IQueryEngine cmdEngine = CommandQueryEngine.getInstance();
+	private QueryDAO queryDao = QueryDAOFactory.getInstance();
 
 	public static IQueryService getInstance() {
 		return INSTANCE;
@@ -33,11 +38,14 @@ public class DefaultQueryService implements IQueryService {
 	@Override
 	public QueryResult postQuery(Query query) {
 		QueryResult queryRes = new QueryResult();
-		long startTime = System.currentTimeMillis();
+		long startTime = Utilities.getCurrentTime();
 		if ("hive".equalsIgnoreCase(query.getMode())
 				|| "shark".equalsIgnoreCase(query.getMode())) {
 			queryRes = cmdEngine.postQuery(query);
-			queryRes.setExecTime((System.currentTimeMillis() - startTime) / 1000);
+			queryRes.setExecTime((Utilities.getCurrentTime() - startTime) / 1000);
+			if (queryRes.getSuccess()) {
+				queryDao.insert(new QueryInfo(query, queryRes, startTime));
+			}
 		} else {
 			throw new IllegalArgumentException("unsupported query mode:"
 					+ query.getMode());
@@ -75,11 +83,10 @@ public class DefaultQueryService implements IQueryService {
 
 	@Override
 	public StreamingOutput getDataFile(String filename) {
-		final InputStream is = HDFSManager
-				.openFSDataInputStream(EnvironmentConstants.HDFS_DATA_ROOT_PATH
-						+ File.separator + filename);
-		StreamingOutput stream = null;
-		stream = new StreamingOutput() {
+		final String absolutePath = EnvironmentConstants.HDFS_DATA_ROOT_PATH
+				+ File.separator + filename;
+		final InputStream is = HDFSManager.openFSDataInputStream(absolutePath);
+		StreamingOutput stream = new StreamingOutput() {
 
 			@Override
 			public void write(OutputStream output) throws IOException,
@@ -91,7 +98,8 @@ public class DefaultQueryService implements IQueryService {
 						output.write(bytes, 0, read);
 					}
 				} catch (IOException e) {
-					throw new PolestarException(e);
+					throw new PolestarException("Read File:" + absolutePath
+							+ " failed!", e);
 				}
 			}
 		};
