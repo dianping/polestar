@@ -40,7 +40,7 @@ public class ProcessJob extends AbstractJob {
 			workDir.mkdirs();
 		}
 		final File dataFile = new File(workDir,
-				Utilities.generateUniqueDataFileName());
+				Utilities.genUniqueDataFileName());
 		dataFile.createNewFile();
 		jobContext.setLocalDataPath(dataFile.getAbsolutePath());
 

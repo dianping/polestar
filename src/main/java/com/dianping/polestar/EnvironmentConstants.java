@@ -2,11 +2,14 @@ package com.dianping.polestar;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.Properties;
 
 import com.dianping.polestar.lang.ClassUtils;
 
 public final class EnvironmentConstants {
+	public final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
+			"yyyy-MM-dd HH:mm:ss");
 	public static String DATA_FILE_EXTENSION = ".gz";
 	public static String WORKING_DIRECTORY_ROOT = "/tmp";
 	public static int DEFAULT_RESULT_DATA_NUMBER = 500;

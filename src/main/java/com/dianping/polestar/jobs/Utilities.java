@@ -93,13 +93,20 @@ public class Utilities {
 		}
 	}
 
-	public static String generateUniqueDataFileName() {
-		return StringUtils.replaceChars(UUID.randomUUID().toString(), "-", "")
-				+ EnvironmentConstants.DATA_FILE_EXTENSION;
+	public static String genUniqueDataFileName() {
+		return genUniqueID() + EnvironmentConstants.DATA_FILE_EXTENSION;
+	}
+
+	public static String genUniqueID() {
+		return StringUtils.replaceChars(UUID.randomUUID().toString(), "-", "");
 	}
 
 	public static String getLastPartFileName(String absolutePath) {
 		File file = new File(absolutePath);
 		return file.getName();
+	}
+
+	public static long getCurrentTime() {
+		return System.currentTimeMillis();
 	}
 }
