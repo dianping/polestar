@@ -19,6 +19,7 @@ import com.dianping.polestar.jobs.Job;
 import com.dianping.polestar.jobs.JobContext;
 import com.dianping.polestar.jobs.JobManager;
 import com.dianping.polestar.jobs.Utilities;
+import com.dianping.polestar.rest.BadParamException;
 import com.dianping.polestar.store.HDFSManager;
 import com.dianping.polestar.store.mysql.dao.QueryDAO;
 import com.dianping.polestar.store.mysql.dao.impl.QueryDAOFactory;
@@ -36,7 +37,7 @@ public class DefaultQueryService implements IQueryService {
 	}
 
 	@Override
-	public QueryResult postQuery(Query query) {
+	public QueryResult postQuery(Query query) throws BadParamException {
 		QueryResult queryRes = new QueryResult();
 		long startTime = Utilities.getCurrentTime();
 		if ("hive".equalsIgnoreCase(query.getMode())
@@ -47,7 +48,7 @@ public class DefaultQueryService implements IQueryService {
 				queryDao.insert(new QueryInfo(query, queryRes, startTime));
 			}
 		} else {
-			throw new IllegalArgumentException("unsupported query mode:"
+			throw new BadParamException("unsupported query mode:"
 					+ query.getMode());
 		}
 		return queryRes;
@@ -82,7 +83,8 @@ public class DefaultQueryService implements IQueryService {
 	}
 
 	@Override
-	public StreamingOutput getDataFile(String filename) {
+	public StreamingOutput getDataFile(String filename)
+			throws BadParamException {
 		final String absolutePath = EnvironmentConstants.HDFS_DATA_ROOT_PATH
 				+ File.separator + filename;
 		final InputStream is = HDFSManager.openFSDataInputStream(absolutePath);
@@ -98,8 +100,8 @@ public class DefaultQueryService implements IQueryService {
 						output.write(bytes, 0, read);
 					}
 				} catch (IOException e) {
-					throw new PolestarException("Read File:" + absolutePath
-							+ " failed!", e);
+					throw new PolestarException("Read File: " + absolutePath
+							+ " failed! ", e);
 				}
 			}
 		};

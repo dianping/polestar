@@ -39,7 +39,8 @@ public class PolestarController {
 	@GET
 	@Path("/download/{filename}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public Response get(@PathParam("filename") String filename) {
+	public Response get(@PathParam("filename") String filename)
+			throws BadParamException {
 		return Response.ok(queryService.getDataFile(filename)).build();
 	}
 
@@ -60,14 +61,14 @@ public class PolestarController {
 		return Response.status(Status.CREATED).entity(result).build();
 	}
 
-	public void verifyQueryParam(Query query) throws BadParamException {
+	private void verifyQueryParam(Query query) throws BadParamException {
 		if (query == null || StringUtils.isBlank(query.getDatabase())
 				|| StringUtils.isBlank(query.getId())
 				|| StringUtils.isBlank(query.getSql())
 				|| StringUtils.isBlank(query.getMode())
 				|| StringUtils.isBlank(query.getUsername())
 				|| StringUtils.isBlank(query.getPassword())) {
-			throw new BadParamException("Missing Query Parameters");
+			throw new BadParamException("Missing Query Parameters, Please check it again!");
 		}
 	}
 }
