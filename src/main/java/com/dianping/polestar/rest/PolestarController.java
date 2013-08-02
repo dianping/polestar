@@ -47,7 +47,7 @@ public class PolestarController {
 	@GET
 	@Path("/cancel/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Boolean cancelQuery(@PathParam("id") String id) {
+	public Boolean cancelQuery(@PathParam("id") String id) throws BadParamException {
 		return queryService.cancel(id);
 	}
 

@@ -13,7 +13,7 @@ public interface IQueryService {
 
 	QueryStatus getStatusInfo(String id);
 
-	Boolean cancel(String id);
+	Boolean cancel(String id) throws BadParamException;
 
 	StreamingOutput getDataFile(String id) throws BadParamException;
 }

@@ -8,6 +8,9 @@ import java.io.OutputStream;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.dianping.polestar.EnvironmentConstants;
 import com.dianping.polestar.PolestarException;
 import com.dianping.polestar.engine.CommandQueryEngine;
@@ -26,6 +29,8 @@ import com.dianping.polestar.store.mysql.dao.impl.QueryDAOFactory;
 import com.dianping.polestar.store.mysql.domain.QueryInfo;
 
 public class DefaultQueryService implements IQueryService {
+	private static final Log LOG = LogFactory.getLog(DefaultQueryService.class);
+	private static final int EOF = -1;
 
 	private static final DefaultQueryService INSTANCE = new DefaultQueryService();
 
@@ -69,10 +74,13 @@ public class DefaultQueryService implements IQueryService {
 	}
 
 	@Override
-	public Boolean cancel(String id) {
+	public Boolean cancel(String id) throws BadParamException {
 		Boolean canceled = false;
 		Job job = JobManager.getJobById(id);
-		if (job != null) {
+		if (job == null) {
+			throw new BadParamException("job " + id
+					+ " doesn't exist, it can not be cancelled !");
+		} else {
 			job.cancel();
 			canceled = job.isCanceled();
 			if (canceled) {
@@ -94,11 +102,15 @@ public class DefaultQueryService implements IQueryService {
 			public void write(OutputStream output) throws IOException,
 					WebApplicationException {
 				try {
+					long count = 0;
 					int read = 0;
-					byte[] bytes = new byte[1024];
-					while ((read = is.read(bytes)) != -1) {
+					byte[] bytes = new byte[1024 * 4];
+					while (EOF != (read = is.read(bytes))) {
 						output.write(bytes, 0, read);
+						count += read;
 					}
+					LOG.info("totally read " + count
+							+ " bytes for download file: " + absolutePath);
 				} catch (IOException e) {
 					throw new PolestarException("Read File: " + absolutePath
 							+ " failed! ", e);
