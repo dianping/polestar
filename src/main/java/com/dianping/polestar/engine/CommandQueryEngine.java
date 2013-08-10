@@ -59,10 +59,9 @@ public class CommandQueryEngine implements IQueryEngine {
 					HDFSManager.putFileToHDFS(jobCtx.getLocalDataPath(),
 							hdfsDataFileAbsolutePath);
 					queryRes.setResultFilePath(hdfsDataFileAbsolutePath);
-				} else {
-					Utilities.fillInColumnsAndData(jobCtx.getStdout()
-							.toString(), queryRes);
-				}
+				} 
+				Utilities.fillInColumnsAndData(jobCtx.getStdout().toString(),
+						queryRes);
 			} else {
 				queryRes.setErrorMsg(jobCtx.getStderr().toString());
 			}

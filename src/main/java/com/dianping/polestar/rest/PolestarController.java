@@ -47,7 +47,8 @@ public class PolestarController {
 	@GET
 	@Path("/cancel/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Boolean cancelQuery(@PathParam("id") String id) throws BadParamException {
+	public Boolean cancelQuery(@PathParam("id") String id)
+			throws BadParamException {
 		return queryService.cancel(id);
 	}
 
@@ -68,7 +69,8 @@ public class PolestarController {
 				|| StringUtils.isBlank(query.getMode())
 				|| StringUtils.isBlank(query.getUsername())
 				|| StringUtils.isBlank(query.getPassword())) {
-			throw new BadParamException("Missing Query Parameters, Please check it again!");
+			throw new BadParamException(
+					"Missing Query Parameters, Please check it again!");
 		}
 	}
 }

@@ -1,7 +1,8 @@
 package com.dianping.polestar.store.mysql.dao.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,11 +10,14 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import com.dianping.polestar.EnvironmentConstants;
 import com.dianping.polestar.store.mysql.dao.QueryDAO;
 import com.dianping.polestar.store.mysql.domain.QueryInfo;
+import com.dianping.polestar.store.mysql.domain.QueryProgress;
 
 public class QueryDAOImp implements QueryDAO {
 	public final static Log LOG = LogFactory.getLog(QueryDAOImp.class);
@@ -68,5 +72,46 @@ public class QueryDAOImp implements QueryDAO {
 		}
 		LOG.info("find " + querys.size() + " query records by user:" + username);
 		return querys;
+	}
+
+	@Override
+	public void insertQueryProgress(QueryProgress queryProgress) {
+		try {
+			// using `replace into` statement to update progressInfo
+			// periodically
+			jdbcTemplate
+					.update("replace into QueryProgress(`id`, `progressInfo`) values(?,?)",
+							new Object[] { queryProgress.getId(),
+									queryProgress.getProgressInfo() },
+							new int[] { Types.VARCHAR, Types.VARCHAR });
+		} catch (DataAccessException dae) {
+			LOG.error("update query progress error, " + dae);
+		}
+	}
+
+	@Override
+	public QueryProgress findQueryProgressById(String id) {
+		QueryProgress qp = null;
+		try {
+			qp = jdbcTemplate
+					.queryForObject(
+							"select `id`, `progressInfo` from QueryProgress where `id` = ?",
+							new Object[] { id },
+							new RowMapper<QueryProgress>() {
+
+								@Override
+								public QueryProgress mapRow(ResultSet rs,
+										int rowNum) throws SQLException {
+									QueryProgress qp = new QueryProgress();
+									qp.setId(rs.getString("id"));
+									qp.setProgressInfo(rs
+											.getString("progressInfo"));
+									return qp;
+								}
+							});
+		} catch (Exception e) {
+			LOG.info(e);
+		}
+		return qp;
 	}
 }

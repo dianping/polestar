@@ -10,3 +10,9 @@ CREATE TABLE `QueryInfo` (
   `path` varchar(500) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
+CREATE TABLE `QueryProgress` (
+  `id` VARCHAR(200) CHARACTER SET utf8 NOT NULL,
+  `progressInfo` MEDIUMTEXT CHARACTER SET utf8,
+  PRIMARY KEY (`id`)
+) ENGINE=MYISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
