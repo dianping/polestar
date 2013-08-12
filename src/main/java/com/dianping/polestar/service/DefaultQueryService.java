@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.logging.Log;
@@ -27,19 +26,15 @@ import com.dianping.polestar.rest.BadParamException;
 import com.dianping.polestar.store.HDFSManager;
 import com.dianping.polestar.store.mysql.dao.QueryDAO;
 import com.dianping.polestar.store.mysql.dao.impl.QueryDAOFactory;
+import com.dianping.polestar.store.mysql.domain.QueryCancel;
 import com.dianping.polestar.store.mysql.domain.QueryInfo;
 import com.dianping.polestar.store.mysql.domain.QueryProgress;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.ClientResponse.Status;
-import com.sun.jersey.api.client.WebResource;
 
 public class DefaultQueryService implements IQueryService {
 	private static final Log LOG = LogFactory.getLog(DefaultQueryService.class);
 	private static final int EOF = -1;
 
 	private static final DefaultQueryService INSTANCE = new DefaultQueryService();
-	private static final Client client = Client.create();
 
 	private IQueryEngine cmdEngine = CommandQueryEngine.getInstance();
 	private QueryDAO queryDao = QueryDAOFactory.getInstance();
@@ -57,7 +52,8 @@ public class DefaultQueryService implements IQueryService {
 			queryRes = cmdEngine.postQuery(query);
 			queryRes.setExecTime((Utilities.getCurrentTime() - startTime) / 1000);
 			if (queryRes.getSuccess()) {
-				queryDao.insert(new QueryInfo(query, queryRes, startTime));
+				queryDao.insertQueryInfo(new QueryInfo(query, queryRes,
+						startTime));
 			}
 		} else {
 			throw new BadParamException("unsupported query mode:"
@@ -91,30 +87,18 @@ public class DefaultQueryService implements IQueryService {
 		Boolean canceled = false;
 		Job job = JobManager.getJobById(id);
 		if (job == null) {
-			for (String uri : EnvironmentConstants.OTHER_CANCEL_QUERY_URIS) {
-				String cancelUri = uri + (uri.endsWith("/") ? "" : "/") + id;
-				WebResource webResource = client.resource(cancelUri);
-				LOG.info("sending cancel job request:" + cancelUri);
-				ClientResponse response = webResource.type(
-						MediaType.APPLICATION_JSON).get(ClientResponse.class);
-				if (Status.OK == response.getClientResponseStatus()
-						&& true == response.getEntity(Boolean.class)) {
-					LOG.info("query has been killed by request:" + cancelUri
-							+ " from "
-							+ EnvironmentConstants.LOCAL_HOST_ADDRESS);
-					canceled = true;
-					break;
-				}
-			}
-			if (!canceled) {
-				throw new BadParamException("job " + id
-						+ " doesn't exist, it can not be cancelled !");
-			}
+			queryDao.insertQueryCancel(new QueryCancel(id,
+					EnvironmentConstants.LOCAL_HOST_ADDRESS));
+			LOG.info("insert into querycancel to db, id: " + id + " host: "
+					+ EnvironmentConstants.LOCAL_HOST_ADDRESS);
+			canceled = true;
 		} else {
 			job.cancel();
 			canceled = job.isCanceled();
 			if (canceled) {
 				JobManager.removeJob(id);
+			} else {
+				throw new BadParamException("job " + id + " cancelled failed !");
 			}
 		}
 		return canceled;

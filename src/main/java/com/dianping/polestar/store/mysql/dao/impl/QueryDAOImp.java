@@ -16,6 +16,7 @@ import org.springframework.jdbc.core.RowMapper;
 
 import com.dianping.polestar.EnvironmentConstants;
 import com.dianping.polestar.store.mysql.dao.QueryDAO;
+import com.dianping.polestar.store.mysql.domain.QueryCancel;
 import com.dianping.polestar.store.mysql.domain.QueryInfo;
 import com.dianping.polestar.store.mysql.domain.QueryProgress;
 
@@ -36,7 +37,7 @@ public class QueryDAOImp implements QueryDAO {
 	}
 
 	@Override
-	public void insert(QueryInfo queryInfo) {
+	public void insertQueryInfo(QueryInfo queryInfo) {
 		jdbcTemplate
 				.update("insert into QueryInfo(`username`, `sql`, `mode`, `addtime`, `exectime`, `path`) values(?,?,?,?,?,?)",
 						new Object[] { queryInfo.getUsername(),
@@ -49,7 +50,7 @@ public class QueryDAOImp implements QueryDAO {
 	}
 
 	@Override
-	public List<QueryInfo> findByUsername(String username) {
+	public List<QueryInfo> findQueryInfoByUsername(String username) {
 		List<QueryInfo> querys = new ArrayList<QueryInfo>();
 		if (!StringUtils.isBlank(username)) {
 			List<Map<String, Object>> rows = jdbcTemplate
@@ -113,5 +114,36 @@ public class QueryDAOImp implements QueryDAO {
 			LOG.info(e);
 		}
 		return qp;
+	}
+
+	@Override
+	public void insertQueryCancel(QueryCancel qc) {
+		jdbcTemplate.update(
+				"replace into QueryCancel(`id`, `host`) values(?,?)",
+				new Object[] { qc.getId(), qc.getHost() }, new int[] {
+						Types.VARCHAR, Types.VARCHAR });
+	}
+
+	@Override
+	public List<QueryCancel> findQueryCancelWithouHost(String host) {
+		List<QueryCancel> cancels = new ArrayList<QueryCancel>();
+		List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+				"SELECT `id`, `host` FROM QueryCancel WHERE host <> ?",
+				new Object[] { host });
+		if (rows != null && rows.size() > 0) {
+			for (Map<String, Object> row : rows) {
+				QueryCancel c = new QueryCancel();
+				c.setId((String) row.get("id"));
+				c.setHost((String) row.get("host"));
+				cancels.add(c);
+			}
+		}
+		return cancels;
+	}
+
+	@Override
+	public void deleteQueryCancelById(String id) {
+		jdbcTemplate.update("DELETE FROM QueryCancel where `id` = ?",
+				new Object[] { id }, new int[] { Types.VARCHAR });
 	}
 }

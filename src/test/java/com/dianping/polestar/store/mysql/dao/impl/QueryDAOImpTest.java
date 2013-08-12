@@ -34,12 +34,12 @@ public class QueryDAOImpTest {
 		q.setSql("show tables;");
 		q.setExecTime(600L);
 		q.setAddtime(sdf.format(addtime));
-		queryDAOImp.insert(q);
+		queryDAOImp.insertQueryInfo(q);
 	}
 
 	@Test
 	public void testGetQueryByUsername() {
-		List<QueryInfo> qs = queryDAOImp.findByUsername("yukang.chen");
+		List<QueryInfo> qs = queryDAOImp.findQueryInfoByUsername("yukang.chen");
 		System.out.println(qs.size());
 		for (int i = 0; i < qs.size(); i++) {
 			System.out.println(qs.get(i));
