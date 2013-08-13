@@ -15,6 +15,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.dianping.polestar.EnvironmentConstants;
 import com.dianping.polestar.PolestarException;
+import com.dianping.polestar.rest.BadParamException;
 
 public class HDFSManager {
 	private static Log LOG = LogFactory.getLog(HDFSManager.class);
@@ -89,18 +90,19 @@ public class HDFSManager {
 		return System.getenv("HIVE_HOME");
 	}
 
-	public static InputStream openFSDataInputStream(String absolutePath) {
+	public static InputStream openFSDataInputStream(String absolutePath)
+			throws BadParamException {
 		Path p = new Path(absolutePath);
 		try {
 			if (!getFS().exists(p)) {
-				throw new PolestarException(p.toString() + " doesn't exist !");
+				throw new BadParamException(p.toString() + " doesn't exist !");
 			}
 			if (!getFS().isFile(p)) {
-				throw new PolestarException(p.toString() + " is not a file !");
+				throw new BadParamException(p.toString() + "  is not a file !");
 			}
 			return getFS().open(p);
 		} catch (IOException e) {
-			throw new PolestarException(e);
+			throw new BadParamException(e.toString());
 		}
 	}
 }

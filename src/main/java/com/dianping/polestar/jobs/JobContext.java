@@ -12,8 +12,9 @@ public final class JobContext {
 	private boolean storeResult;
 	private String id;
 	private int exitCode;
-	private StringBuffer stderr = new StringBuffer(500);
-	private StringBuffer stdout = new StringBuffer(500);;
+	private boolean isDone = false;
+	private StringBuffer stderr = new StringBuffer(2000);
+	private StringBuffer stdout = new StringBuffer(2000);
 
 	public String getWorkDir() {
 		return workDir;
@@ -101,5 +102,13 @@ public final class JobContext {
 
 	public void setStdout(StringBuffer stdout) {
 		this.stdout = stdout;
+	}
+
+	public boolean isDone() {
+		return isDone;
+	}
+
+	public void setDone() {
+		isDone = true;
 	}
 }
