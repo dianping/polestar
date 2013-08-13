@@ -16,3 +16,9 @@ CREATE TABLE `QueryProgress` (
   `progressInfo` MEDIUMTEXT CHARACTER SET utf8,
   PRIMARY KEY (`id`)
 ) ENGINE=MYISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+
+CREATE TABLE `QueryCancel` (
+  `id` VARCHAR(200) COLLATE utf8_unicode_ci NOT NULL,
+  `host` VARCHAR(50) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MYISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci

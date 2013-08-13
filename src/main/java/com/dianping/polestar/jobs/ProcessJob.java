@@ -55,6 +55,7 @@ public class ProcessJob extends AbstractJob {
 				+ jobContext.getUsername() + TICKET_CACHE_EXTENTION;
 		Utilities.hadoopKerberosLogin(jobContext.getUsername(),
 				jobContext.getPasswd(), ticketCachePath);
+		Runtime.getRuntime().exec("chmod 777 " + ticketCachePath);
 		jobContext.getProperties().setProperty(KRB5CCNAME, ticketCachePath);
 
 		setEnvironmentVariables();
