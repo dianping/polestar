@@ -16,12 +16,19 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.dianping.polestar.EnvironmentConstants;
+import com.dianping.polestar.store.mysql.dao.QueryDAO;
+import com.dianping.polestar.store.mysql.dao.impl.QueryDAOFactory;
+import com.dianping.polestar.store.mysql.domain.QueryProgress;
 
 public class ProcessJob extends AbstractJob {
 	public final static Log LOG = LogFactory.getLog(ProcessJob.class);
 
+	private final static int FLUSH_STDERROR_IN_MILLISECONDS = 2000;
 	private final static String KRB5CCNAME = "KRB5CCNAME";
 	private final static String TICKET_CACHE_EXTENTION = ".ticketcache";
+	private final static String SHARK_FILTER_STRING = "spray-io-worker";
+
+	private final QueryDAO queryDao = QueryDAOFactory.getInstance();
 
 	protected final Map<String, String> envMap;
 	protected volatile Boolean killedWhenExceedMaxLines = false;
@@ -48,13 +55,16 @@ public class ProcessJob extends AbstractJob {
 				+ jobContext.getUsername() + TICKET_CACHE_EXTENTION;
 		Utilities.hadoopKerberosLogin(jobContext.getUsername(),
 				jobContext.getPasswd(), ticketCachePath);
+		Runtime.getRuntime().exec("chmod 777 " + ticketCachePath);
 		jobContext.getProperties().setProperty(KRB5CCNAME, ticketCachePath);
 
 		setEnvironmentVariables();
 
 		final Boolean storeResult = jobContext.isStoreResult();
-		final int resultLimit = storeResult ? EnvironmentConstants.MAX_RESULT_DATA_NUMBER
+		final int resultLineLimit = storeResult ? EnvironmentConstants.MAX_RESULT_DATA_NUMBER
 				: EnvironmentConstants.DEFAULT_RESULT_DATA_NUMBER;
+		final int showLineLimit = Math.min(resultLineLimit,
+				EnvironmentConstants.DEFAULT_RESULT_DATA_NUMBER);
 
 		ProcessBuilder builder = new ProcessBuilder(jobContext.getCommands());
 		builder.directory(workDir);
@@ -79,21 +89,27 @@ public class ProcessJob extends AbstractJob {
 					}
 					int currLineNum = 0;
 					String line = reader.readLine();
-					while (line != null && currLineNum++ <= resultLimit
+					while (line != null && currLineNum <= resultLineLimit
 							&& !isInterrupted()) {
+						if (line.contains(SHARK_FILTER_STRING)) {
+							line = reader.readLine();
+							continue;
+						}
 						if (storeResult) {
 							bos.write(line.getBytes());
 							bos.write(Utilities.LINE_SEPARATOR);
-						} else {
+						}
+						if (currLineNum <= showLineLimit) {
 							jobContext.getStdout().append(line)
 									.append(Utilities.LINE_SEPARATOR);
 						}
+						currLineNum++;
 						line = reader.readLine();
 					}
 
-					if (currLineNum > resultLimit) {
+					if (currLineNum > resultLineLimit) {
 						LOG.info("data result lines limit exceed max value:"
-								+ resultLimit
+								+ resultLineLimit
 								+ ",start to destroy query process, id:"
 								+ jobContext.getId());
 						killedWhenExceedMaxLines = true;
@@ -102,6 +118,7 @@ public class ProcessJob extends AbstractJob {
 				} catch (Exception e) {
 					LOG.error(e);
 				} finally {
+					jobContext.setDone();
 					try {
 						if (bos != null) {
 							bos.flush();
@@ -135,9 +152,25 @@ public class ProcessJob extends AbstractJob {
 			}
 		};
 
+		Thread flushDBThread = new Thread(threadName + "-flushdb") {
+			@Override
+			public void run() {
+				while (!jobContext.isDone()) {
+					String stderrString = jobContext.getStderr().toString();
+					queryDao.insertQueryProgress(new QueryProgress(jobContext
+							.getId(), stderrString));
+					try {
+						Thread.sleep(FLUSH_STDERROR_IN_MILLISECONDS);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+		};
+
 		try {
 			outThread.start();
 			errThread.start();
+			flushDBThread.start();
 		} catch (IllegalStateException ise) {
 		}
 
@@ -151,8 +184,10 @@ public class ProcessJob extends AbstractJob {
 			try {
 				outThread.join();
 				errThread.join();
+				flushDBThread.join();
 			} catch (InterruptedException ie) {
-				LOG.warn("Interrupted while reading the stdout/stderr stream", ie);
+				LOG.warn("Interrupted while reading the stdout/stderr stream",
+						ie);
 			}
 			// force return exitcode 0 when query was killed because of
 			// exceedance of max line number

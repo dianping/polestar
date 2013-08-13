@@ -23,7 +23,7 @@ public class JobManager {
 			idToJobContext.put(id, jobctx);
 		}
 	}
-	
+
 	public static void removeJob(String id) {
 		synchronized (JobManager.class) {
 			idToJob.remove(id);

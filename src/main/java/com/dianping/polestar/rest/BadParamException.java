@@ -8,4 +8,8 @@ public class BadParamException extends SimpleWebException {
 	public BadParamException(String msg) {
 		super(Status.BAD_REQUEST.getStatusCode(), msg);
 	}
+	
+	public BadParamException(Status status, String msg) {
+		super(status.getStatusCode(), msg);
+	}
 }
